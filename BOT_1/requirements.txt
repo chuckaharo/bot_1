@@ -1,9 +1,0 @@
-python-telegram-bot[job-queue]==21.1.1
-sqlalchemy==2.0.23
-psycopg2-binary==2.9.9
-requests==2.31.0
-cryptography==42.0.5
-python-dotenv==1.0.0
-redis==5.0.1
-pydantic==2.5.3  # Или последняя версия
-pydantic-settings>=2.0.3
