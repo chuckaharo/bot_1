@@ -1,0 +1,62 @@
+services:
+  bot:
+    build: .
+    env_file: .env
+    restart: unless-stopped
+    networks:
+      - bot-network
+    volumes:
+      - ./logs:/app/logs
+      - ./src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bot.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.bot.entrypoints=websecure"
+      - "traefik.http.routers.bot.tls.certresolver=letsencrypt"
+
+  postgres:
+    image: postgres:15-alpine
+    env_file: .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - bot-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botuser -d botdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - bot-network
+
+  traefik:
+    image: traefik:v2.6
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik:/etc/traefik
+    networks:
+      - bot-network
+    environment:
+      - "TRAEFIK_PROVIDERS_DOCKER=true"
+
+volumes:
+  pg_data:
+  redis_data:
+
+networks:
+  bot-network:
+    driver: bridge
